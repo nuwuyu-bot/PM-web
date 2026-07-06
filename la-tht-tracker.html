@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LA · THT 合作管理平台</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f1f3d;--navy-mid:#1a3560;
+  --red:#c0392b;
+  --text:#1a1a1a;--text-sec:#555;--text-muted:#888;
+  --border:#e5e5e5;--border-strong:#ccc;
+  --bg:#fff;--surface:#fafafa;--surface2:#f4f4f4;
+  --pass-bg:#edf7f1;--pass-txt:#1a6b3a;
+  --fail-bg:#fdf0f0;--fail-txt:#c0392b;
+  --pend-bg:#fdf6e3;--pend-txt:#8a5c00;
+  --radius:6px;
+}
+body{font-family:'Microsoft JhengHei','PingFang TC','Segoe UI',system-ui,sans-serif;font-size:13px;color:var(--text);background:#fff;min-height:100vh}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-wrap{display:flex;width:700px;min-height:380px;border-radius:8px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.45)}
+.login-left{flex:1;background:#162947;padding:48px 40px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-left::after{content:'LA';position:absolute;right:-10px;bottom:-30px;font-size:160px;font-weight:800;color:rgba(255,255,255,.04);pointer-events:none}
+.login-logo-row{display:flex;align-items:center;gap:12px}
+.login-logo-box{width:42px;height:42px;background:var(--red);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0}
+.login-brand{color:#fff;font-size:18px;font-weight:600}
+.login-brand span{display:block;font-size:11px;font-weight:400;color:rgba(255,255,255,.45);margin-top:2px}
+.login-tagline{color:rgba(255,255,255,.5);font-size:12px;line-height:1.8;margin-top:28px}
+.login-footer{font-size:11px;color:rgba(255,255,255,.25)}
+.login-right{width:290px;background:#fff;padding:44px 32px;display:flex;flex-direction:column;justify-content:center}
+.login-right h2{font-size:16px;font-weight:600;margin-bottom:4px}
+.login-right .sub{font-size:12px;color:var(--text-muted);margin-bottom:24px}
+.login-right label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px}
+.login-right input{width:100%;padding:10px 12px;border:1px solid var(--border-strong);border-radius:var(--radius);font-size:13px;outline:none;margin-bottom:14px}
+.login-right input:focus{border-color:var(--navy)}
+.login-right button{width:100%;padding:10px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer}
+.login-err{color:var(--red);font-size:11px;margin-top:8px;display:none}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding:0 28px;position:sticky;top:0;z-index:200}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;height:52px}
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-logo{width:34px;height:34px;background:var(--red);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.tb-brand{font-size:14px;font-weight:600;color:#fff;letter-spacing:.03em}
+.tb-brand span{color:rgba(255,255,255,.4);font-weight:400;margin:0 5px}
+.tb-divider{width:1px;height:16px;background:rgba(255,255,255,.2)}
+.tb-project{font-size:12px;color:rgba(255,255,255,.55)}
+.tb-meta{font-size:11px;color:rgba(255,255,255,.35)}
+
+/* NAV */
+.nav{border-bottom:1px solid var(--border);background:#fff;display:flex;padding:0 28px}
+.nav-tab{padding:12px 16px;font-size:13px;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
+.nav-tab:hover{color:var(--navy)}
+.nav-tab.active{color:var(--navy);font-weight:600;border-bottom-color:var(--red)}
+
+/* MAIN */
+.main{padding:28px;max-width:1140px;margin:0 auto;width:100%}
+.loading{text-align:center;padding:60px;color:var(--text-muted);font-size:13px}
+
+/* SECTION LABEL */
+.slabel{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--navy);text-transform:uppercase;margin-bottom:14px;border-left:3px solid var(--red);padding-left:8px}
+
+/* KPI CARDS */
+.kpi-row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.kpi-row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.kpi-row-6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:22px}
+.kpi{border:1px solid var(--border);border-left:4px solid var(--navy);border-radius:var(--radius);padding:16px 18px;background:#fff}
+.kpi-val{font-size:26px;font-weight:700;color:var(--navy);line-height:1}
+.kpi-val-sm{font-size:15px;font-weight:600;color:var(--navy);line-height:1.4}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text-muted);margin-top:6px;text-transform:uppercase;letter-spacing:.05em}
+.kpi-sub{font-size:11px;color:var(--text-sec);margin-top:4px;line-height:1.5}
+
+/* VERDICT */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+.verdict-box{border:1px solid var(--border);border-left:4px solid var(--navy);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px}
+.verdict-box:last-child{margin-bottom:0}
+.v-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--navy);text-transform:uppercase;margin-bottom:5px}
+.v-val{font-size:13px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:7px}
+.v-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.v-dot-warn{background:var(--red)}
+.v-dot-ok{background:#1a6b3a}
+.v-desc{font-size:11px;color:var(--text-sec);margin-top:6px;line-height:1.6}
+
+/* RISK */
+.risk-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text-sec);padding:8px 0;border-bottom:1px solid var(--border)}
+.risk-row:last-child{border-bottom:none}
+.risk-tag{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--red);color:#fff;white-space:nowrap;margin-top:1px;letter-spacing:.04em}
+
+/* STAGE TIMELINE */
+.stage-timeline{display:flex;align-items:flex-start;position:relative;margin-bottom:28px;padding:0 20px}
+.stage-timeline::before{content:'';position:absolute;top:19px;left:60px;right:60px;height:2px;background:var(--border);z-index:0}
+.stage-item{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;z-index:1}
+.stage-circle{width:38px;height:38px;border-radius:50%;border:3px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--text-muted);z-index:2}
+.stage-circle.done{background:var(--navy);border-color:var(--navy);color:#fff}
+.stage-circle.current{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 0 5px rgba(192,57,43,.12)}
+.stage-name{font-size:11px;font-weight:600;color:var(--navy);margin-top:8px;text-align:center;line-height:1.4;max-width:110px}
+.stage-name.muted{color:var(--text-muted);font-weight:400}
+.stage-date{font-size:10px;color:var(--text-muted);margin-top:2px;text-align:center}
+
+/* BADGES */
+.badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap}
+.b-dev{background:#ebf3fb;color:#185fa5}
+.b-pilot{background:var(--pend-bg);color:var(--pend-txt)}
+.b-mass{background:var(--pass-bg);color:var(--pass-txt)}
+.b-blocked{background:var(--fail-bg);color:var(--fail-txt)}
+.b-high{background:var(--fail-bg);color:var(--fail-txt)}
+.b-normal{background:var(--surface2);color:#555}
+
+/* PRODUCT TABLE */
+.prod-group{margin-bottom:28px}
+.prod-group-hdr{font-size:12px;font-weight:700;color:#fff;background:var(--navy);padding:9px 14px;border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:space-between}
+.prod-group-count{font-size:11px;font-weight:400;opacity:.7}
+.prod-table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--border);border-top:none}
+.prod-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.prod-table tr:last-child td{border-bottom:none}
+.prod-table tr:hover td{background:var(--surface);cursor:pointer}
+.prod-table thead td{background:var(--surface2);font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;padding:7px 14px}
+.prod-code{font-weight:700;color:var(--navy)}
+
+/* PRODUCT DETAIL OVERLAY */
+#prod-detail{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto}
+.detail-panel{background:#fff;border-radius:8px;width:100%;max-width:880px;box-shadow:0 16px 48px rgba(0,0,0,.2)}
+.detail-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:var(--navy);border-radius:8px 8px 0 0}
+.detail-hdr-title{font-size:15px;font-weight:600;color:#fff}
+.detail-close{font-size:22px;color:rgba(255,255,255,.5);cursor:pointer;padding:4px 8px;line-height:1}
+.detail-close:hover{color:#fff}
+.detail-body{display:grid;grid-template-columns:230px 1fr}
+.detail-left{padding:20px;border-right:1px solid var(--border)}
+.detail-right{padding:20px 24px;overflow-y:auto;max-height:70vh}
+.spec-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;gap:8px}
+.spec-row:last-child{border-bottom:none}
+.spec-k{color:var(--text-muted);flex-shrink:0}
+.spec-v{font-weight:500;text-align:right}
+.situation-box{margin-top:12px;background:var(--surface2);border-radius:var(--radius);padding:10px 12px;font-size:11px;color:var(--text-sec);line-height:1.6}
+.situation-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.tl-hdr{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:14px}
+.tl-wrap{position:relative;padding-left:18px}
+.tl-item{position:relative;padding-bottom:18px;font-size:12px}
+.tl-item::before{content:'';position:absolute;left:-14px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--navy);border:2px solid #fff;outline:1.5px solid var(--navy)}
+.tl-item::after{content:'';position:absolute;left:-11px;top:12px;bottom:0;width:1px;background:var(--border)}
+.tl-item:last-child::after{display:none}
+.tl-item.current::before{background:var(--red);outline-color:var(--red)}
+.tl-item.pending-st::before{background:#ccc;outline-color:#ccc}
+.tl-date{font-size:10px;color:var(--text-muted);margin-bottom:2px}
+.tl-event{font-weight:600;color:var(--navy)}
+.tl-notes{color:var(--text-sec);margin-top:3px;line-height:1.6;font-size:11px}
+.order-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:8px}
+.order-box-title{font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.order-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)}
+.order-row:last-child{border-bottom:none}
+.order-k{color:var(--text-muted)}
+.order-v{font-weight:600}
+
+/* COLLAB LOG */
+.log-entry{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.log-entry:hover .log-title{text-decoration:underline}
+.log-date-col{min-width:110px;font-size:12px;font-weight:600;color:var(--navy)}
+.log-type-pill{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.log-meta{flex:1}
+.log-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.log-tags{display:flex;gap:5px;flex-wrap:wrap}
+.log-tag{font-size:9px;padding:2px 7px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted)}
+.log-arrow{color:var(--text-muted);font-size:16px;flex-shrink:0}
+
+/* MEETING DETAIL OVERLAY */
+#meeting-detail{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;align-items:flex-start;justify-content:center;padding:36px 20px;overflow-y:auto}
+.meeting-panel{background:#fff;border-radius:8px;width:100%;max-width:760px;box-shadow:0 16px 48px rgba(0,0,0,.2)}
+.meeting-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:22px 28px;background:var(--navy);border-radius:8px 8px 0 0}
+.meeting-hdr-date{font-size:11px;color:rgba(255,255,255,.45);margin-bottom:4px}
+.meeting-hdr-title{font-size:16px;font-weight:600;color:#fff}
+.meeting-body{padding:24px 28px;max-height:75vh;overflow-y:auto}
+.report-section{margin-bottom:20px}
+.report-section h4{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.report-info-row{display:grid;grid-template-columns:110px 1fr;gap:6px;font-size:12px;padding:4px 0}
+.report-info-k{color:var(--text-muted)}
+.ri-decision{background:#ebf3fb;border-left:3px solid #185fa5;border-radius:var(--radius);padding:9px 12px;margin-bottom:5px;font-size:12px;color:#1f3c6e}
+.ri-issue{background:var(--fail-bg);border-left:3px solid var(--red);border-radius:var(--radius);padding:9px 12px;margin-bottom:5px;font-size:12px;color:#7a1a1a}
+.ri-followup{background:var(--pend-bg);border-radius:var(--radius);padding:9px 12px;margin-bottom:5px;font-size:12px;color:#5c3d00}
+.ri-note{background:var(--surface2);border-radius:var(--radius);padding:9px 12px;margin-bottom:5px;font-size:12px;color:var(--text-sec)}
+
+/* ACTIONS */
+.action-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.action-filters{display:flex;gap:5px;flex-wrap:wrap}
+.fchip{font-size:10px;padding:4px 12px;border:1px solid var(--border);border-radius:20px;cursor:pointer;color:var(--text-sec);background:#fff;transition:all .1s}
+.fchip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.add-btn{font-size:11px;padding:6px 14px;border:1px solid var(--border-strong);border-radius:var(--radius);cursor:pointer;background:#fff}
+.add-btn:hover{background:var(--surface)}
+.action-summary-txt{font-size:11px;color:var(--text-muted);margin-bottom:12px}
+.action-table{width:100%;border-collapse:collapse;font-size:12px}
+.action-table th{font-size:10px;font-weight:600;color:#fff;background:var(--navy);padding:9px 10px;text-align:left;white-space:nowrap}
+.action-table th:first-child{border-radius:4px 0 0 0}
+.action-table th:last-child{border-radius:0 4px 0 0}
+.action-table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+.action-table tr:hover td{background:var(--surface)}
+.a-desc{font-weight:500;color:var(--navy);line-height:1.4}
+.a-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+.a-resp{font-size:10px;color:var(--text-sec);margin-top:3px;line-height:1.5}
+.ow-dot{display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--navy);font-size:9px;font-weight:700;text-align:center;line-height:20px;color:#fff;margin-right:4px;vertical-align:middle;flex-shrink:0}
+.s-overdue{background:var(--fail-bg);color:var(--fail-txt);font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px}
+.s-open{background:var(--surface2);color:#555;font-size:9px;font-weight:600;padding:3px 8px;border-radius:10px}
+.s-progress{background:var(--pend-bg);color:var(--pend-txt);font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px}
+.s-done{background:var(--pass-bg);color:var(--pass-txt);font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px}
+.overdue-date{color:var(--red);font-weight:600}
+.done-row td{opacity:.5}
+.mark-done-btn{font-size:10px;padding:3px 8px;border:1px solid var(--border-strong);border-radius:4px;cursor:pointer;background:#fff;margin-top:4px}
+.mark-done-btn:hover{background:var(--pass-bg);color:var(--pass-txt);border-color:var(--pass-txt)}
+
+/* PARTNER */
+.partner-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.ps-block{margin-bottom:22px}
+.ps-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid var(--red)}
+.info-box{font-size:12px;color:var(--text-sec);line-height:1.8;background:var(--surface);border-radius:var(--radius);padding:14px 16px}
+.info-row{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-k{color:var(--text-muted);min-width:80px;flex-shrink:0}
+.info-v{color:var(--text)}
+.team-list{display:flex;flex-direction:column;gap:8px}
+.member{display:flex;align-items:center;gap:10px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.mem-name{font-size:12px;font-weight:600}
+.mem-role{font-size:10px;color:var(--text-muted)}
+.scope-item{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--text-sec);margin-bottom:6px}
+.scope-item strong{display:block;font-size:11px;font-weight:600;color:var(--navy);margin-bottom:2px}
+.divider{height:1px;background:var(--border);margin:20px 0}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-left">
+      <div>
+        <div class="login-logo-row">
+          <div class="login-logo-box">LA</div>
+          <div class="login-brand">Long Advance <span>合作管理平台</span></div>
+        </div>
+        <div class="login-tagline" style="margin-top:28px">
+          機能性布料開發合作管理<br>
+          LA × THT · 9款產品 · 最終客戶：Mammut
+        </div>
+      </div>
+      <div class="login-footer">Long Advance Co., Ltd. · 機密文件 · 2026</div>
+    </div>
+    <div class="login-right">
+      <h2>登入系統</h2>
+      <div class="sub">請輸入訪問密碼</div>
+      <label>密碼</label>
+      <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button onclick="doLogin()">進入系統</button>
+      <div class="login-err" id="login-err">密碼錯誤，請重新輸入。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP ──────────────────────────────────── -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="tb-left">
+        <div class="tb-logo">LA</div>
+        <div class="tb-brand">Long Advance <span>×</span> THT</div>
+        <div class="tb-divider"></div>
+        <div class="tb-project">合作管理平台</div>
+      </div>
+      <div class="tb-meta">Mammut · 9款產品 · 2026</div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-tab active" onclick="showTab('overview')">總覽</div>
+    <div class="nav-tab" onclick="showTab('products')">產品管理</div>
+    <div class="nav-tab" onclick="showTab('collab')">合作紀錄</div>
+    <div class="nav-tab" onclick="showTab('actions')">行動項目</div>
+    <div class="nav-tab" onclick="showTab('partner')">夥伴資訊</div>
+  </div>
+
+  <div class="main">
+
+    <!-- ══════════ TAB 1: 總覽 ══════════ -->
+    <div id="tab-overview">
+      <div id="overview-content"><div class="loading">載入中…</div></div>
+    </div>
+
+    <!-- ══════════ TAB 2: 產品管理 ══════════ -->
+    <div id="tab-products" style="display:none">
+      <div id="products-content"><div class="loading">載入中…</div></div>
+    </div>
+
+    <!-- ══════════ TAB 3: 合作紀錄 ══════════ -->
+    <div id="tab-collab" style="display:none">
+      <div id="collab-content"><div class="loading">載入中…</div></div>
+    </div>
+
+    <!-- ══════════ TAB 4: 行動項目 ══════════ -->
+    <div id="tab-actions" style="display:none">
+      <div id="actions-content"><div class="loading">載入中…</div></div>
+    </div>
+
+    <!-- ══════════ TAB 5: 夥伴資訊 ══════════ -->
+    <div id="tab-partner" style="display:none">
+      <div id="partner-content"><div class="loading">載入中…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── PRODUCT DETAIL OVERLAY ── -->
+<div id="prod-detail" onclick="if(event.target===this)closeProd()">
+  <div class="detail-panel">
+    <div class="detail-hdr">
+      <div class="detail-hdr-title" id="detail-title"></div>
+      <div class="detail-close" onclick="closeProd()">×</div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-left" id="detail-specs"></div>
+      <div class="detail-right" id="detail-timeline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MEETING DETAIL OVERLAY ── -->
+<div id="meeting-detail" onclick="if(event.target===this)closeMeeting()">
+  <div class="meeting-panel">
+    <div class="meeting-hdr">
+      <div>
+        <div class="meeting-hdr-date" id="mtg-date"></div>
+        <div class="meeting-hdr-title" id="mtg-title"></div>
+      </div>
+      <div class="detail-close" style="color:rgba(255,255,255,.5)" onclick="closeMeeting()">×</div>
+    </div>
+    <div class="meeting-body" id="mtg-body"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────
+const SHEET_ID = '1VEIBzIspygOBaedAPapRFcqqkguhP6HQDCR_JE39YEk';
+const BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=`;
+
+// ─── DATA CACHE ───────────────────────────────────────────────────
+const DATA = {};
+let actionsData = [];
+
+// ─── CSV PARSER ───────────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = []; let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') { if (inQ && text[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
+    else if ((ch === '\n' || ch === '\r') && !inQ) {
+      row.push(cur.trim()); cur = '';
+      if (row.some(c => c)) rows.push(row);
+      row = [];
+      if (ch === '\r' && text[i+1] === '\n') i++;
+    } else cur += ch;
+  }
+  if (cur || row.length) { row.push(cur.trim()); if (row.some(c=>c)) rows.push(row); }
+  return rows;
+}
+
+function toObjects(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => h.replace(/^"|"$/g,'').trim());
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (row[i]||'').replace(/^"|"$/g,'').trim(); });
+    return obj;
+  }).filter(obj => Object.values(obj).some(v => v));
+}
+
+function toKV(text) {
+  const rows = parseCSV(text);
+  const kv = {};
+  rows.forEach(row => {
+    const rawKey = (row[0]||'').trim();
+    const rawVal = (row[1]||'').trim();
+    // Handle multi-line blob cells (Google Sheets exports merged content with \n)
+    if (rawKey.includes('\n')) {
+      const keys = rawKey.split('\n').map(s => s.trim());
+      const vals = rawVal.split('\n').map(s => s.trim());
+      keys.forEach((k, i) => {
+        const nk = k.replace(/\s+/g, '_');
+        if (!nk || nk.startsWith('──') || nk.startsWith('→') || nk === 'Field') return;
+        kv[nk] = vals[i] || '';
+      });
+    } else {
+      const k = rawKey.replace(/\s+/g, '_');
+      const v = rawVal;
+      if (k && !k.startsWith('──') && !k.startsWith('→') && k !== 'Field' && k !== 'field') kv[k] = v;
+    }
+  });
+  return kv;
+}
+
+async function fetchSheet(name) {
+  try {
+    const r = await fetch(BASE_URL + encodeURIComponent(name));
+    if (!r.ok) throw new Error(r.status);
+    return await r.text();
+  } catch(e) { console.warn('Fetch failed:', name, e); return ''; }
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────
+function doLogin() {
+  const v = document.getElementById('pw-input').value;
+  if (v === 'latht2026') {
+    document.getElementById('login-screen').style.display = 'none';
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    loadAll();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+  }
+}
+
+// ─── LOAD ALL ─────────────────────────────────────────────────────
+async function loadAll() {
+  const sheets = ['Overview','Products','Product_Specs','Product_Lifecycle','Orders','Meetings','Meeting_Details','Actions','Partner_Info'];
+  const results = await Promise.all(sheets.map(s => fetchSheet(s)));
+  DATA.overview     = toKV(results[0]);
+  DATA.products     = toObjects(results[1]);
+  DATA.specs        = toObjects(results[2]);
+  DATA.lifecycle    = toObjects(results[3]);
+  DATA.orders       = toObjects(results[4]);
+  DATA.meetings     = toObjects(results[5]);
+  DATA.meetingDets  = toObjects(results[6]);
+  DATA.actions      = toObjects(results[7]);
+  actionsData       = DATA.actions.map(a => ({...a, _done: false}));
+  DATA.partner      = toKV(results[8]);
+  renderOverview();
+  renderProducts();
+  renderCollab();
+  renderActions();
+  renderPartner();
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────
+const TABS = ['overview','products','collab','actions','partner'];
+function showTab(id) {
+  TABS.forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-tab').forEach((el,i) => {
+    el.classList.toggle('active', TABS[i]===id);
+  });
+}
+
+// ─── TAB 1: 總覽 ──────────────────────────────────────────────────
+function renderOverview() {
+  const ov = DATA.overview;
+  const prods = DATA.products;
+  const total = prods.length;
+  const inProgress = prods.filter(p => { const s=(p.Stage||'').toLowerCase(); return s!=='mass production'&&s!=='量產'; }).length;
+
+  function normalizeStatus(s) {
+    if (!s) return 'pending';
+    const t = s.trim().toLowerCase();
+    if (t === 'done' || t === '完成') return 'done';
+    if (t === 'current' || t === '進行中') return 'current';
+    return 'pending';
+  }
+  // Stages
+  const stages = [1,2,3,4,5].map(n => ({
+    name: ov[`Stage_${n}_Name`] || '',
+    status: normalizeStatus(ov[`Stage_${n}_Status`]),
+    date: ov[`Stage_${n}_Date`] || ''
+  }));
+
+  // Risks
+  const risks = [1,2,3,4].map(n => ov[`Risk_${n}`]).filter(Boolean);
+
+  const html = `
+    <div class="slabel">合作夥伴總覽</div>
+
+    <div class="kpi-row-4">
+      <div class="kpi">
+        <div class="kpi-val-sm">${ov['Business_Status']||'—'}</div>
+        <div class="kpi-label">業務狀態</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">${total}</div>
+        <div class="kpi-label">合作產品</div>
+        <div class="kpi-sub">進行中 ${inProgress} 款</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val-sm" style="font-size:12px;line-height:1.5">${ov['Strategic_Objective']||'—'}</div>
+        <div class="kpi-label">戰略目標</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val-sm" style="font-size:12px;line-height:1.5">${ov['Executive_Decision']||'—'}</div>
+        <div class="kpi-label">執行建議</div>
+      </div>
+    </div>
+
+    <div class="slabel">供應商開發進度</div>
+    <div class="stage-timeline">
+      ${stages.map((s,i) => `
+        <div class="stage-item">
+          <div class="stage-circle ${s.status}">${s.status==='done'?'✓':s.status==='current'?'●':'○'}</div>
+          <div class="stage-name ${s.status==='pending'?'muted':''}">${s.name}</div>
+          <div class="stage-date">${s.date ? s.date.substring(0,7) : ''}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="verdict-box">
+          <div class="v-label">合作關係健康度</div>
+          <div class="v-val"><span class="v-dot v-dot-warn"></span>持續推進中 — 存在待解風險</div>
+          <div class="v-desc">第二次工廠訪問已於2026年6月15–17日完成。縐紋缺陷根本原因已確認。THT尚未提交所需驗貨報告。</div>
+        </div>
+        <div class="verdict-box">
+          <div class="v-label">長期投資訊號</div>
+          <div class="v-val"><span class="v-dot v-dot-ok"></span>正面 — 待第二階段確認</div>
+          <div class="v-desc">THT展現良好合作意願與技術能力。核心問題：THT 能否解決含 Spandex 成分的產品布面問題</div>
+        </div>
+      </div>
+      <div>
+        <div class="slabel" style="margin-bottom:10px">關鍵風險</div>
+        ${risks.map((r,i) => {
+          const tags = ['品質','截止日期','技術','供應'];
+          return `<div class="risk-row"><span class="risk-tag">${tags[i]||'風險'}</span>${r}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  document.getElementById('overview-content').innerHTML = html;
+}
+
+// ─── TAB 2: 產品管理 ─────────────────────────────────────────────
+function renderProducts() {
+  const prods = DATA.products;
+  // Normalize stage: accept both EN and ZH
+  function normStage(s) {
+    if (!s) return '';
+    const m = {'development':'開發中','pilot':'試產','mass production':'量產','blocked':'受阻'};
+    return m[s.toLowerCase()] || s;
+  }
+  prods.forEach(p => { p._stage = normStage(p.Stage); p._priority = p.Priority==='High'||p.Priority==='優先'||p.Priority==='高'?'高':'一般'; });
+
+  const stageDef = ['開發中','試產','量產','受阻'];
+  const stageBadge = {'開發中':'b-dev','試產':'b-pilot','量產':'b-mass','受阻':'b-blocked'};
+
+  const active = prods.length;
+  const dev = prods.filter(p => p._stage==='開發中').length;
+  const pilot = prods.filter(p => p._stage==='試產').length;
+  const mass = prods.filter(p => p._stage==='量產').length;
+  const blocked = prods.filter(p => p._stage==='受阻').length;
+  const high = prods.filter(p => p._priority==='高').length;
+
+  let html = `
+    <div class="slabel">產品狀態總覽</div>
+    <div class="kpi-row-6">
+      <div class="kpi"><div class="kpi-val">${active}</div><div class="kpi-label">活躍產品</div></div>
+      <div class="kpi"><div class="kpi-val">${dev}</div><div class="kpi-label">開發中</div></div>
+      <div class="kpi"><div class="kpi-val">${pilot}</div><div class="kpi-label">試產</div></div>
+      <div class="kpi"><div class="kpi-val">${mass}</div><div class="kpi-label">量產</div></div>
+      <div class="kpi"><div class="kpi-val">${blocked}</div><div class="kpi-label">受阻</div></div>
+      <div class="kpi" style="border-left-color:var(--red)"><div class="kpi-val" style="color:var(--red)">${high}</div><div class="kpi-label">高優先</div></div>
+    </div>
+    <div class="slabel">產品列表</div>`;
+
+  stageDef.forEach(stage => {
+    const group = prods.filter(p => p._stage===stage);
+    if (!group.length) return;
+    html += `
+      <div class="prod-group">
+        <div class="prod-group-hdr">
+          <span>${stage}</span>
+          <span class="prod-group-count">${group.length} 款</span>
+        </div>
+        <table class="prod-table">
+          <thead><tr>
+            <td>產品代碼</td><td>產品類型</td><td>客戶</td><td>訂單號</td><td>數量</td><td>優先級</td>
+          </tr></thead>
+          <tbody>
+            ${group.map(p => `
+              <tr onclick="openProd('${p.Article_Code}')">
+                <td><span class="prod-code">${p.Article_Code}</span></td>
+                <td>${p.Product_Type||'—'}</td>
+                <td>${p.Customer||'—'}</td>
+                <td>${p.Inv_No||'—'}</td>
+                <td>${p.Qty||'—'}</td>
+                <td><span class="badge ${p._priority==='高'?'b-high':'b-normal'}">${p._priority}</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  });
+
+  document.getElementById('products-content').innerHTML = html;
+}
+
+function openProd(code) {
+  const p = DATA.products.find(x => x.Article_Code===code) || {};
+  const spec = DATA.specs.find(x => x.Article_Code===code) || {};
+  const lc = DATA.lifecycle.filter(x => x.Article_Code===code);
+  const orders = DATA.orders.filter(x => x.Article_Code===code);
+
+  document.getElementById('detail-title').textContent = `${code}　${spec.Product_Name||p.Product_Type||''}`;
+
+  const specFields = [
+    ['成份 Composition', spec.Composition],
+    ['織造 Construction', spec.Construction],
+    ['彈性 Stretch', spec.Stretch],
+    ['結構 Structure', spec.Structure],
+    ['幅寬 Width', spec.Width],
+    ['克重 Weight', spec.Weight],
+    ['客戶 Customer', p.Customer||spec.Customer],
+    ['測試要求', spec.Test_Requirements],
+    ['階段', p.Stage],
+    ['供應商', p.Supplier],
+  ];
+
+  document.getElementById('detail-specs').innerHTML = `
+    ${specFields.filter(([,v])=>v).map(([k,v])=>`
+      <div class="spec-row"><span class="spec-k">${k}</span><span class="spec-v">${v}</span></div>
+    `).join('')}
+    ${spec.Notes ? `<div class="situation-box"><div class="situation-lbl">備註</div>${spec.Notes}</div>` : ''}`;
+
+  function normLcStatus(s) {
+    if (!s) return '';
+    const t = s.trim().toLowerCase();
+    if (t==='done'||t==='完成') return '';
+    if (t==='current'||t==='進行中') return 'current';
+    return 'pending-st';
+  }
+  const tlHtml = lc.map(e => {
+    const ordersForStage = ['Mass Production','量產','Order','訂單'].includes(e.Stage) ? orders : [];
+    return `
+      <div class="tl-item ${normLcStatus(e.Status)}">
+        <div class="tl-date">${e.Date||''} &nbsp;·&nbsp; ${e.Stage||''}</div>
+        <div class="tl-event">${e.Event||''}</div>
+        <div class="tl-notes">${e.Notes||''}</div>
+        ${ordersForStage.map(o=>`
+          <div class="order-box">
+            <div class="order-box-title">訂單資訊</div>
+            <div class="order-row"><span class="order-k">訂單號</span><span class="order-v">${o.Order_No||'—'}</span></div>
+            <div class="order-row"><span class="order-k">客戶</span><span class="order-v">${o.Customer||'—'}</span></div>
+            <div class="order-row"><span class="order-k">數量</span><span class="order-v">${o.Qty||'—'} ${o.Unit||''}</span></div>
+            <div class="order-row"><span class="order-k">截止日期</span><span class="order-v" style="color:var(--red)">${o.Deadline||'—'}</span></div>
+            <div class="order-row"><span class="order-k">狀態</span><span class="order-v">${o.Status||'—'}</span></div>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+
+  document.getElementById('detail-timeline').innerHTML = `
+    <div class="tl-hdr">產品生命週期</div>
+    <div class="tl-wrap">${tlHtml || '<div style="color:var(--text-muted);font-size:12px">尚無紀錄</div>'}</div>`;
+
+  document.getElementById('prod-detail').style.display='flex';
+}
+function closeProd(){document.getElementById('prod-detail').style.display='none';}
+
+// ─── TAB 3: 合作紀錄 ─────────────────────────────────────────────
+function renderCollab() {
+  const mtgs = DATA.meetings;
+  const typeColor = {
+    'Factory Visit':'background:#ebf3fb;color:#185fa5',
+    '工廠訪問':'background:#ebf3fb;color:#185fa5',
+    'Video Call':'background:#f0f4ff;color:#3b5998',
+    '視訊會議':'background:#f0f4ff;color:#3b5998',
+    'Email':'background:#f4f4f4;color:#555',
+    '電子郵件':'background:#f4f4f4;color:#555',
+    'Phone Call':'background:var(--pend-bg);color:var(--pend-txt)',
+    '電話會議':'background:var(--pend-bg);color:var(--pend-txt)',
+    'Sample Shipment':'background:var(--pass-bg);color:var(--pass-txt)',
+    '樣品寄送':'background:var(--pass-bg);color:var(--pass-txt)',
+    'Decision Record':'background:var(--fail-bg);color:var(--fail-txt)',
+    '決策紀錄':'background:var(--fail-bg);color:var(--fail-txt)',
+    'Kickoff':'background:#ebf3fb;color:#185fa5',
+    '啟動會議':'background:#ebf3fb;color:#185fa5',
+  };
+
+  const html = `
+    <div class="slabel">合作歷程紀錄</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:16px">點擊項目查看完整報告</div>
+    ${mtgs.map(m => `
+      <div class="log-entry" onclick="openMeeting('${m.Meeting_ID}')">
+        <div class="log-date-col">${m.Date_Display||m.Date||''}</div>
+        <span class="log-type-pill" style="${typeColor[m.Type]||'background:#f4f4f4;color:#555'}">${m.Type||''}</span>
+        <div class="log-meta">
+          <div class="log-title">${m.Title||''}</div>
+          <div class="log-tags">
+            ${(m.Tags||'').split(/[,，·]/).filter(Boolean).map(t=>`<span class="log-tag">${t.trim()}</span>`).join('')}
+          </div>
+        </div>
+        <div class="log-arrow">›</div>
+      </div>`).join('')}`;
+
+  document.getElementById('collab-content').innerHTML = html;
+}
+
+function openMeeting(id) {
+  const m = DATA.meetings.find(x => x.Meeting_ID===id) || {};
+  const dets = DATA.meetingDets.filter(x => x.Meeting_ID===id);
+
+  document.getElementById('mtg-date').textContent = m.Date_Display||m.Date||'';
+  document.getElementById('mtg-title').textContent = m.Title||'';
+
+  const sections = [...new Set(dets.map(d=>d.Section))];
+  const itemClass = {decision:'ri-decision',issue:'ri-issue',followup:'ri-followup',info:'ri-note',note:'ri-note'};
+  const sectionZH = {
+    'Overview':'概要','Key Decisions':'主要決策','Issues Identified':'已識別問題',
+    'Follow-up Actions':'後續行動','Technical Notes':'技術備註'
+  };
+
+  let html = '';
+  // Overview info rows
+  const overviewItems = dets.filter(d=>d.Section==='Overview');
+  if (overviewItems.length) {
+    html += `<div class="report-section"><h4>${sectionZH['Overview']||'概要'}</h4>`;
+    overviewItems.forEach(d => {
+      const parts = d.Content.split(':');
+      if (parts.length > 1) {
+        html += `<div class="report-info-row"><div class="report-info-k">${parts[0]}</div><div>${parts.slice(1).join(':').trim()}</div></div>`;
+      } else {
+        html += `<div class="ri-note">${d.Content}</div>`;
+      }
+    });
+    html += '</div>';
+  }
+
+  sections.filter(s=>s!=='Overview').forEach(sec => {
+    const items = dets.filter(d=>d.Section===sec);
+    html += `<div class="report-section"><h4>${sectionZH[sec]||sec}</h4>`;
+    items.forEach(d => { html += `<div class="${itemClass[d.Item_Type]||'ri-note'}">${d.Content}</div>`; });
+    html += '</div>';
+  });
+
+  document.getElementById('mtg-body').innerHTML = html||'<div style="color:var(--text-muted);font-size:12px">尚無詳細資料</div>';
+  document.getElementById('meeting-detail').style.display='flex';
+}
+function closeMeeting(){document.getElementById('meeting-detail').style.display='none';}
+
+// ─── TAB 4: 行動項目 ─────────────────────────────────────────────
+let activeFilter='all';
+
+function renderActions(filter) {
+  if (filter!==undefined) activeFilter=filter;
+  let rows = actionsData;
+  function normActionStatus(s) {
+    if (!s) return 'open';
+    const t = s.trim().toLowerCase();
+    if (t==='overdue'||t==='逾期'||t==='已逾期'||t==='過期') return 'overdue';
+    if (t==='done'||t==='完成'||t==='已完成') return 'done';
+    if (t==='in progress'||t==='進行中') return 'in progress';
+    return 'open';
+  }
+  actionsData.forEach(a => { a._ns = normActionStatus(a.Status); });
+
+  if (activeFilter==='overdue') rows=rows.filter(a=>a._ns==='overdue');
+  else if (activeFilter==='tht') rows=rows.filter(a=>['THT','Both','雙方'].includes(a.Owner));
+  else if (activeFilter==='la') rows=rows.filter(a=>['LA','Both','雙方'].includes(a.Owner));
+  else if (activeFilter==='open') rows=rows.filter(a=>a._ns==='open'||a._ns==='in progress');
+  else if (activeFilter==='done') rows=rows.filter(a=>a._ns==='done'||a._done);
+
+  const total=actionsData.length;
+  const overdue=actionsData.filter(a=>a._ns==='overdue').length;
+  const open=actionsData.filter(a=>a._ns==='open'||a._ns==='in progress').length;
+
+  const statusHTML = a => {
+    const ns = a._done?'done':a._ns;
+    if(ns==='overdue') return '<span class="s-overdue">已逾期</span>';
+    if(ns==='open') return '<span class="s-open">待處理</span>';
+    if(ns==='in progress') return '<span class="s-progress">進行中</span>';
+    if(ns==='done') return '<span class="s-done">已完成</span>';
+    return a.Status;
+  };
+
+  const chips = [
+    ['all','全部'],['overdue','已逾期'],['tht','THT'],['la','LA'],['open','未完成'],['done','已完成']
+  ];
+
+  const html = `
+    <div class="action-toolbar">
+      <div>
+        <div class="slabel" style="margin-bottom:6px">行動項目</div>
+        <div class="action-summary-txt">${total} 項合計 · ${overdue} 項逾期 · ${open} 項進行中</div>
+      </div>
+      <button class="add-btn" onclick="addActionPrompt()">＋ 新增行動</button>
+    </div>
+    <div class="action-filters" style="margin-bottom:14px">
+      ${chips.map(([f,l])=>`<span class="fchip ${activeFilter===f?'on':''}" onclick="renderActions('${f}')">${l}</span>`).join('')}
+    </div>
+    <table class="action-table">
+      <thead><tr>
+        <th>描述</th>
+        <th>相關產品</th>
+        <th>需求來源</th>
+        <th>LA職責</th>
+        <th>THT職責</th>
+        <th>負責方</th>
+        <th>截止日期</th>
+        <th>狀態</th>
+        <th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((a,i) => {
+          const isDone = a._done || a._ns==='done';
+          const initials = (a.Owner_Name||'').substring(0,2).toUpperCase()||'—';
+          return `<tr class="${isDone?'done-row':''}">
+            <td>
+              <div class="a-desc">${a.Description||''}</div>
+              ${a.Note?`<div class="a-resp" style="font-style:italic">${a.Note}</div>`:''}
+            </td>
+            <td class="a-sub">${a.Article_Code||'—'}</td>
+            <td style="font-size:11px">${a.Requested_By||'—'}</td>
+            <td class="a-resp">${a.LA_Responsibility||'—'}</td>
+            <td class="a-resp">${a.THT_Responsibility||'—'}</td>
+            <td style="font-size:11px"><span class="ow-dot">${initials}</span>${a.Owner_Name||''}</td>
+            <td style="font-size:11px" class="${a._ns==='overdue'&&!isDone?'overdue-date':''}">${a.Due_Date||'—'}</td>
+            <td>${statusHTML(a)}</td>
+            <td></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+  document.getElementById('actions-content').innerHTML = html;
+}
+
+function markDone(idx){
+  actionsData[idx]._done=true;
+  renderActions();
+}
+function addActionPrompt(){
+  alert('新增行動功能需連接 Google Apps Script。\n請直接在 Google Sheets「Actions」頁籤新增一行，重新整理網頁即可更新。');
+}
+
+// ─── TAB 5: 夥伴資訊 ─────────────────────────────────────────────
+function renderPartner() {
+  const p = DATA.partner;
+  const laTeam = [
+    {name:'Sharon',role:'COO'},
+    {name:'Ruby',role:'業務經理'},
+    {name:'Neal',role:'研發總監'},
+    {name:'Joyce',role:'專案協調（PM）'},
+    {name:'許文龍',role:'技術顧問'},
+  ];
+  const thtTeam = [
+    {name:'Văn',role:'商務總監'},
+    {name:'Long',role:'業務代表'},
+    {name:'工廠技術團隊',role:'染整製程'},
+  ];
+  function av(name){return name.charAt(0)||'?';}
+
+  const html = `
+    <div class="slabel">夥伴資訊</div>
+    <div class="partner-grid">
+      <div>
+        <div class="ps-block">
+          <div class="ps-title">關於 THT</div>
+          <div class="info-box">
+            <div class="info-row"><span class="info-k">公司名稱</span><span class="info-v">${p['Company_Name']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">國家</span><span class="info-v">${p['Country']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">工廠地址</span><span class="info-v">${p['Factory_Address']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">生產能力</span><span class="info-v">${p['Production_Capacity']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">認證</span><span class="info-v">${p['Certifications']||'—'}</span></div>
+          </div>
+        </div>
+        <div class="ps-block">
+          <div class="ps-title">合作資訊</div>
+          <div class="info-box">
+            <div class="info-row"><span class="info-k">合作開始</span><span class="info-v">${p['Partnership_Start']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">終端客戶</span><span class="info-v">${p['Customer']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">合作範圍</span><span class="info-v">${p['Cooperation_Scope']||'—'}</span></div>
+          </div>
+        </div>
+        <div class="ps-block">
+          <div class="ps-title">聯絡資訊</div>
+          <div class="info-box">
+            <div class="info-row"><span class="info-k">業務代表</span><span class="info-v">${p['Primary_Contact']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">商務總監</span><span class="info-v">${p['Commercial_Director']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">Email</span><span class="info-v">${p['Email']||'—'}</span></div>
+            <div class="info-row"><span class="info-k">電話</span><span class="info-v">${p['Phone']||'—'}</span></div>
+          </div>
+        </div>
+        <div class="ps-block">
+          <div class="ps-title">實地訪問備註</div>
+          <div class="info-box" style="line-height:1.7">${p['Field_Visit_Notes']||'—'}</div>
+        </div>
+      </div>
+      <div>
+        <div class="ps-block">
+          <div class="ps-title">LA 團隊</div>
+          <div class="team-list">
+            ${laTeam.map(m=>`
+              <div class="member">
+                <div class="avatar">${av(m.name)}</div>
+                <div><div class="mem-name">${m.name}</div><div class="mem-role">${m.role}</div></div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="ps-block">
+          <div class="ps-title">THT 團隊</div>
+          <div class="team-list">
+            ${thtTeam.map(m=>`
+              <div class="member">
+                <div class="avatar" style="background:#c0392b">${av(m.name)}</div>
+                <div><div class="mem-name">${m.name}</div><div class="mem-role">${m.role}</div></div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="ps-block">
+          <div class="ps-title">合作範疇</div>
+          <div class="scope-item"><strong>第一階段 ✓</strong>THT染整工藝討論（LA胚布）— 已完成</div>
+          <div class="scope-item"><strong>THT胚布評估（進行中）</strong>使用THT自有胚布，驗證供應鏈能否獨立達標</div>
+          <div class="scope-item"><strong>最終目標</strong>以THT胚布為正式量產基礎，服務Mammut最終客戶</div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('partner-content').innerHTML = html;
+}
+</script>
+</body>
+</html>
